@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#3b82f6" />
+  <meta name="description" content="Game Lingkar & Silang (Tic Tac Toe) offline bisa dimainkan vs Bot atau 2 pemain" />
+  <title>Lingkar & Silang</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icon-192x192.png" />
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    h1 {
+      margin: 16px 0 12px;
+      font-size: clamp(22px, 6vw, 28px);
+      color: #1e3a8a;
+      text-align: center;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .input-section, .mode-select {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+      width: 90%;
+      max-width: 320px;
+      animation: fadeIn 0.6s ease;
+    }
+    input {
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      font-size: 16px;
+      transition: all 0.2s;
+      background: rgba(255,255,255,0.8);
+      width: 100%;
+    }
+    input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+    button {
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+      font-weight: 500;
+      transition: all 0.2s;
+      cursor: pointer;
+      width: 100%;
+    }
+    .mode-btn {
+      background: #3b82f6;
+      color: white;
+      box-shadow: 0 2px 5px rgba(59, 130, 246, 0.3);
+    }
+    .mode-btn:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(59, 130, 246, 0.4);
+    }
+    .mode-btn:active {
+      transform: translateY(0);
+    }
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+    .game-board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      width: 90vw;
+      max-width: min(90vw, 320px);
+      aspect-ratio: 1 / 1;
+      margin: 10px 0;
+      animation: fadeIn 0.5s ease;
+      touch-action: manipulation;
+    }
+    .cell {
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(36px, 12vw, 48px);
+      font-weight: bold;
+      border-radius: 12px;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .cell::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0);
+      transition: background 0.2s;
+    }
+    .cell:hover::after, .cell:active::after {
+      background: rgba(255,255,255,0.2);
+    }
+    .cell.x {
+      color: #3b82f6;
+    }
+    .cell.o {
+      color: #ef4444;
+    }
+    .cell.winning {
+      background: #facc15 !important;
+      color: #1e3a8a;
+      animation: pulseWin 0.8s ease infinite alternate;
+      z-index: 1;
+    }
+    .cell.winning::after {
+      background: rgba(255, 235, 153, 0.3);
+    }
+    .status {
+      margin: 16px 0 8px;
+      font-size: clamp(16px, 4.5vw, 18px);
+      color: #1f2937;
+      font-weight: 500;
+      text-align: center;
+      min-height: 24px;
+      padding: 0 16px;
+      animation: fadeIn 0.5s ease;
+    }
+    .reset-btn {
+      background: #ef4444;
+      color: white;
+      margin: 8px 0 20px;
+      box-shadow: 0 2px 5px rgba(239, 68, 68, 0.3);
+    }
+    .reset-btn:hover {
+      background: #dc2626;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(239, 68, 68, 0.4);
+    }
+    .reset-btn:active {
+      transform: translateY(0);
+    }
+    .hidden {
+      display: none !important;
+    }
+    .player-turn {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      width: 100%;
+      max-width: 320px;
+    }
+    .player-indicator {
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.3s;
+      flex: 1;
+      text-align: center;
+      max-width: 45%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .active-player {
+      background: #3b82f6;
+      color: white;
+      transform: scale(1.05);
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+    }
+    .inactive-player {
+      background: white;
+      color: #6b7280;
+      opacity: 0.8;
+    }
+    .install-btn {
+      background: #10b981;
+      color: white;
+      margin-top: 8px;
+      box-shadow: 0 2px 5px rgba(16, 185, 129, 0.3);
+    }
+    .install-btn:hover {
+      background: #059669;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulseWin {
+      from { transform: scale(1); box-shadow: 0 3px 10px rgba(250, 204, 21, 0.5); }
+      to { transform: scale(1.05); box-shadow: 0 5px 15px rgba(250, 204, 21, 0.7); }
+    }
+    @keyframes popIn {
+      0% { transform: scale(0); opacity: 0; }
+      80% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @media (max-width: 400px) {
+      .cell {
+        border-radius: 10px;
+      }
+      input, button {
+        padding: 10px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Lingkar & Silang</h1>
+
+  <div class="input-section" id="inputSection">
+    <input type="text" id="player1Input" placeholder="Nama Pemain 1 (X)" maxlength="12" />
+    <input type="text" id="player2Input" placeholder="Nama Pemain 2 / Bot (O)" maxlength="12" />
+    <div class="mode-select">
+      <button class="mode-btn" onclick="startGame(1)">Main vs Bot</button>
+      <button class="mode-btn" onclick="startGame(2)">Main 2 Orang</button>
+    </div>
+    <button class="install-btn hidden" id="installBtn">Install Aplikasi</button>
+  </div>
+
+  <div class="game-container hidden" id="gameContainer">
+    <div class="player-turn" id="playerTurn">
+      <div class="player-indicator inactive-player" id="player1Indicator"></div>
+      <div class="player-indicator inactive-player" id="player2Indicator"></div>
+    </div>
+    <div class="game-board" id="board"></div>
+    <div class="status" id="status"></div>
+    <button class="reset-btn" id="resetBtn">Main Lagi</button>
+  </div>
+
+  <script>
+    // Game Logic
+    const boardElement = document.getElementById("board");
+    const statusElement = document.getElementById("status");
+    const inputSection = document.getElementById("inputSection");
+    const gameContainer = document.getElementById("gameContainer");
+    const resetBtn = document.getElementById("resetBtn");
+    const player1Indicator = document.getElementById("player1Indicator");
+    const player2Indicator = document.getElementById("player2Indicator");
+    const installBtn = document.getElementById("installBtn");
+
+    let board = ["", "", "", "", "", "", "", "", ""];
+    let currentPlayer = "X";
+    let gameMode = 1;
+    let gameOver = false;
+    let player1 = "Pemain 1";
+    let player2 = "Pemain 2";
+    let winningCombo = [];
+    let moveCount = 0;
+    let deferredPrompt;
+
+    // PWA Installation
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.classList.remove('hidden');
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          installBtn.classList.add('hidden');
+        }
+        deferredPrompt = null;
+      }
+    });
+
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+          console.log('ServiceWorker registration successful');
+        }).catch(err => {
+          console.log('ServiceWorker registration failed: ', err);
+        });
+      });
+    }
+
+    // Game Functions
+    function startGame(mode) {
+      const p1 = document.getElementById("player1Input").value.trim();
+      const p2 = document.getElementById("player2Input").value.trim();
+      
+      if (!p1) {
+        alert("Nama Pemain 1 harus diisi!");
+        return;
+      }
+      
+      if (mode === 2 && !p2) {
+        alert("Nama Pemain 2 harus diisi untuk mode 2 pemain!");
+        return;
+      }
+      
+      player1 = p1 || "Pemain 1";
+      player2 = mode === 1 ? (p2 || "Bot") : p2;
+      gameMode = mode;
+      
+      inputSection.classList.add("hidden");
+      gameContainer.classList.remove("hidden");
+      
+      player1Indicator.textContent = `${player1} (X)`;
+      player2Indicator.textContent = `${player2} (O)`;
+      
+      resetGame();
+    }
+
+    function resetGame() {
+      board = ["", "", "", "", "", "", "", "", ""];
+      currentPlayer = "X";
+      gameOver = false;
+      winningCombo = [];
+      moveCount = 0;
+      renderBoard();
+      updateStatus();
+      updatePlayerIndicators();
+      
+      if (gameMode === 1 && currentPlayer === "O") {
+        setTimeout(botMove, 800);
+      }
+    }
+
+    function renderBoard() {
+      boardElement.innerHTML = "";
+      board.forEach((cell, i) => {
+        const cellEl = document.createElement("div");
+        cellEl.className = `cell ${cell === 'X' ? 'x' : cell === 'O' ? 'o' : ''}`;
+        if (winningCombo.includes(i)) cellEl.classList.add("winning");
+        cellEl.textContent = cell;
+        cellEl.onclick = () => handleMove(i);
+        
+        if (cell) {
+          cellEl.style.animation = "popIn 0.3s ease forwards";
+        }
+        
+        boardElement.appendChild(cellEl);
+      });
+    }
+
+    function handleMove(index) {
+      if (board[index] !== "" || gameOver) return;
+      
+      board[index] = currentPlayer;
+      moveCount++;
+      renderBoard();
+      
+      const win = checkWin(currentPlayer);
+      if (win) {
+        winningCombo = win;
+        renderBoard();
+        statusElement.textContent = `${getCurrentPlayerName()} menang! 🎉`;
+        gameOver = true;
+        highlightWinningCells();
+        updatePlayerIndicators();
+        return;
+      }
+
+      if (moveCount === 9) {
+        statusElement.textContent = `Seri! 🤝`;
+        gameOver = true;
+        return;
+      }
+
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+      updateStatus();
+      updatePlayerIndicators();
+      
+      if (gameMode === 1 && currentPlayer === "O" && !gameOver) {
+        setTimeout(botMove, 800);
+      }
+    }
+
+    function botMove() {
+      if (gameOver) return;
+      
+      let move = findWinningMove("O") || findWinningMove("X") || findRandomMove();
+      
+      if (move !== null) {
+        setTimeout(() => {
+          handleMove(move);
+        }, 500);
+      }
+    }
+
+    function findWinningMove(player) {
+      for (let i = 0; i < 9; i++) {
+        if (board[i] === "") {
+          board[i] = player;
+          if (checkWin(player)) {
+            board[i] = "";
+            return i;
+          }
+          board[i] = "";
+        }
+      }
+      return null;
+    }
+
+    function findRandomMove() {
+      let emptyCells = board.map((v, i) => v === "" ? i : null).filter(v => v !== null);
+      if (emptyCells.length === 0) return null;
+      
+      if (board[4] === "") return 4;
+      
+      let corners = [0, 2, 6, 8].filter(i => board[i] === "");
+      if (corners.length > 0) {
+        return corners[Math.floor(Math.random() * corners.length)];
+      }
+      
+      return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    }
+
+    function updateStatus() {
+      statusElement.textContent = `Giliran: ${getCurrentPlayerName()}`;
+    }
+
+    function updatePlayerIndicators() {
+      if (gameOver) {
+        player1Indicator.classList.remove("active-player");
+        player2Indicator.classList.remove("active-player");
+        player1Indicator.classList.add("inactive-player");
+        player2Indicator.classList.add("inactive-player");
+      } else {
+        if (currentPlayer === "X") {
+          player1Indicator.classList.add("active-player");
+          player1Indicator.classList.remove("inactive-player");
+          player2Indicator.classList.add("inactive-player");
+          player2Indicator.classList.remove("active-player");
+        } else {
+          player2Indicator.classList.add("active-player");
+          player2Indicator.classList.remove("inactive-player");
+          player1Indicator.classList.add("inactive-player");
+          player1Indicator.classList.remove("active-player");
+        }
+      }
+    }
+
+    function highlightWinningCells() {
+      const cells = document.querySelectorAll('.cell');
+      cells.forEach((cell, i) => {
+        if (winningCombo.includes(i)) {
+          cell.classList.add('winning');
+        }
+      });
+    }
+
+    function getCurrentPlayerName() {
+      return currentPlayer === "X" ? player1 : player2;
+    }
+
+    function checkWin(player) {
+      const wins = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      
+      for (let combo of wins) {
+        if (combo.every(i => board[i] === player)) {
+          return combo;
+        }
+      }
+      return null;
+    }
+
+    // Initialize
+    resetBtn.addEventListener('click', resetGame);
+    
+    document.getElementById("player1Input").addEventListener('input', function(e) {
+      this.value = this.value.substring(0, 12);
+    });
+    
+    document.getElementById("player2Input").addEventListener('input', function(e) {
+      this.value = this.value.substring(0, 12);
+    });
+
+    // Check if app is launched as PWA
+    window.addEventListener('appinstalled', () => {
+      installBtn.classList.add('hidden');
+    });
+
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      installBtn.classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
